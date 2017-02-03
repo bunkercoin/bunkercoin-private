@@ -27,12 +27,22 @@
  * online backup system.
  */
 
-#include "crypto/scrypt.h"
-#include "crypto/hmac_sha256.h"
+#include "scrypt.h"
+#include "util.h"
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
 #include <openssl/sha.h>
+
+#if defined(USE_SSE2) && !defined(USE_SSE2_ALWAYS)
+#ifdef _MSC_VER
+// MSVC 64bit is unable to use inline asm
+#include <intrin.h>
+#else
+// GCC Linux or i686-w64-mingw32
+#include <cpuid.h>
+#endif
+#endif
 
 #if defined(USE_SSE2) && !defined(USE_SSE2_ALWAYS)
 #ifdef _MSC_VER
@@ -194,6 +204,7 @@ void scrypt_1024_1_1_256_sp_generic(const char *input, char *output, char *scrat
 
 	V = (uint32_t *)(((uintptr_t)(scratchpad) + 63) & ~ (uintptr_t)(63));
 
+
 	PBKDF2_SHA256((const uint8_t *)input, 80, (const uint8_t *)input, 80, 1, B, 128);
 
 	for (k = 0; k < 32; k++)
@@ -219,6 +230,10 @@ void scrypt_1024_1_1_256_sp_generic(const char *input, char *output, char *scrat
 }
 
 #if defined(USE_SSE2)
+// By default, set to generic scrypt function. This will prevent crash in case when scrypt_detect_sse2() wasn't called
+void (*scrypt_1024_1_1_256_sp_detected)(const char *input, char *output, char *scratchpad) = &scrypt_1024_1_1_256_sp_generic;
+
+void scrypt_detect_sse2()
 // By default, set to generic scrypt function. This will prevent crash in case when scrypt_detect_sse2() wasn't called
 void (*scrypt_1024_1_1_256_sp_detected)(const char *input, char *output, char *scratchpad) = &scrypt_1024_1_1_256_sp_generic;
 
@@ -250,6 +265,7 @@ void scrypt_detect_sse2()
         scrypt_1024_1_1_256_sp_detected = &scrypt_1024_1_1_256_sp_generic;
         printf("scrypt: using scrypt-generic, SSE2 unavailable.\n");
     }
+#endif // USE_SSE2_ALWAYS
 #endif // USE_SSE2_ALWAYS
 }
 #endif

@@ -5,10 +5,15 @@
 
 #include "primitives/block.h"
 
+#include "crypto/scrypt.h"
+#include "crypto/hashgroestl.h"
+#include "crypto/hashskein.h"
+#include "crypto/hashqubit.h"
 #include "hash.h"
 #include "tinyformat.h"
 #include "utilstrencodings.h"
 #include "crypto/common.h"
+#include "util.h"
 
 void CBlockHeader::SetAuxpow (CAuxPow* apow)
 {
@@ -21,6 +26,48 @@ void CBlockHeader::SetAuxpow (CAuxPow* apow)
         auxpow.reset();
         SetAuxpowFlag(false);
     }
+}
+
+int CBlockHeader::GetAlgo() const
+{
+    LogPrintf("version is %i",  nVersion);
+    switch (nVersion & BLOCK_VERSION_ALGO)
+    {
+        case 1:
+            return ALGO_SCRYPT;
+        case BLOCK_VERSION_SHA256D:
+            return ALGO_SHA256D;
+        case BLOCK_VERSION_GROESTL:
+            return ALGO_GROESTL;
+        case BLOCK_VERSION_SKEIN:
+            return ALGO_SKEIN;
+        case BLOCK_VERSION_QUBIT:
+            return ALGO_QUBIT;
+    }
+    return ALGO_SCRYPT;
+}
+
+uint256 CBlockHeader::GetPoWAlgoHash(int algo) const
+{
+    switch (algo)
+    {
+        case ALGO_SHA256D:
+            return GetHash();
+        case ALGO_SCRYPT:
+        {
+            uint256 thash;
+            // Caution: scrypt_1024_1_1_256 assumes fixed length of 80 bytes
+            scrypt_1024_1_1_256(BEGIN(nVersion), BEGIN(thash));
+            return thash;
+        }
+        case ALGO_GROESTL:
+            return HashGroestl(BEGIN(nVersion), END(nNonce));
+        case ALGO_SKEIN:
+            return HashSkein(BEGIN(nVersion), END(nNonce));
+        case ALGO_QUBIT:
+            return HashQubit(BEGIN(nVersion), END(nNonce));
+    }
+    return GetHash();
 }
 
 std::string CBlock::ToString() const

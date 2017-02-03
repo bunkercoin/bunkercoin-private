@@ -14,6 +14,30 @@
 
 #include <boost/shared_ptr.hpp>
 
+enum { 
+    ALGO_SHA256D  = 0,
+    ALGO_SCRYPT   = 1,
+    ALGO_GROESTL  = 2,
+    ALGO_SKEIN    = 3,
+    ALGO_QUBIT    = 4,
+    NUM_ALGOS_IMPL };
+
+const int NUM_ALGOS = 5;
+
+enum
+{
+    // primary version
+    BLOCK_VERSION_DEFAULT        = 2, 
+
+    // algo
+    BLOCK_VERSION_ALGO           = (7 << 9),
+    BLOCK_VERSION_SCRYPT         = (1 << 9),
+    BLOCK_VERSION_SHA256D        = (1 << 9),
+    BLOCK_VERSION_GROESTL        = (2 << 9),
+    BLOCK_VERSION_SKEIN          = (3 << 9),
+    BLOCK_VERSION_QUBIT          = (4 << 9),
+};
+
 /** Nodes collect new transactions into a block, hash them into a hash tree,
  * and scan through nonce values to make the block's hash satisfy proof-of-work
  * requirements.  When they solve the proof-of-work, they broadcast the block
@@ -54,6 +78,22 @@ public:
         auxpow.reset();
     }
 
+    bool IsNull() const
+    {
+        return (nBits == 0);
+    }
+
+    int GetAlgo() const;
+
+    uint256 GetHash() const;
+
+    uint256 GetPoWAlgoHash(int algo) const;
+
+
+    int64_t GetBlockTime() const
+    {
+        return (int64_t)nTime;
+    }
     /**
      * Set the block's auxpow (or unset it).  This takes care of updating
      * the version accordingly.

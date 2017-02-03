@@ -1187,7 +1187,9 @@ static bool ReadBlockOrHeader(T& block, const CDiskBlockPos& pos, const Consensu
     }
 
     // Check the header
-    if (fCheckPOW && !CheckAuxPowProofOfWork(block, consensusParams))
+    int nAlgo = block.GetAlgo();
+    LogPrintf("Algo is %i", nAlgo);
+    if (!CheckProofOfWork(block.GetPoWAlgoHash(nAlgo), block.nBits, consensusParams))
         return error("ReadBlockFromDisk: Errors in block header at %s", pos.ToString());
 
     return true;
@@ -2916,10 +2918,8 @@ bool FindUndoPos(CValidationState &state, int nFile, CDiskBlockPos &pos, unsigne
 bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state, bool fCheckPOW)
 {
     // Check proof of work matches claimed amount
-    // We don't have block height as this is called without context (i.e. without
-    // knowing the previous block), but that's okay, as the checks done are permissive
-    // (i.e. doesn't check work limit or whether AuxPoW is enabled)
-    if (fCheckPOW && !CheckAuxPowProofOfWork(block, Params().GetConsensus(0)))
+    int nAlgo = block.GetAlgo();
+    if (fCheckPOW && !CheckProofOfWork(block.GetPoWAlgoHash(nAlgo), block.nBits, consensusParams))
         return state.DoS(50, false, REJECT_INVALID, "high-hash", false, "proof of work failed");
 
     return true;

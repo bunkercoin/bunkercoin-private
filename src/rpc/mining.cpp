@@ -124,7 +124,9 @@ UniValue generateBlocks(boost::shared_ptr<CReserveScript> coinbaseScript, int nG
             IncrementExtraNonce(pblock, chainActive.Tip(), nExtraNonce);
         }
         if (!nMineAuxPow) {
-            while (nMaxTries > 0 && pblock->nNonce < nInnerLoopCount && !CheckProofOfWork(pblock->GetPoWHash(), pblock->nBits, Params().GetConsensus(nHeight))) {
+            // TODO Fix mining
+        //int nAlgo = pblock->GetAlgo(2);
+        while (nMaxTries > 0 && pblock->nNonce < nInnerLoopCount && !CheckProofOfWork(pblock->GetPoWHash(), pblock->nBits, Params().GetConsensus(nHeight))) {
                 ++pblock->nNonce;
                 --nMaxTries;
             }
